@@ -1,13 +1,16 @@
 ## Imports
 import pygame
 from pygame.locals import (
-    K_DOWN,
     K_ESCAPE,
     K_LEFT,
     K_RIGHT,
     K_UP,
     KEYDOWN,
 )
+
+import collider
+
+world = collider.World()
 
 
 ## the spike class
@@ -22,7 +25,12 @@ class Spike(pygame.sprite.Sprite):
 
 spikes = []
 for i in range(11):
-   spikes.append(Spike((i * 35)+17, 35))
+    spikes.append(Spike((i * 35) + 17, 35))
+    #world.add(spikes[])
+
+
+
+
 
 ## Define the Star class
 class Star(pygame.sprite.Sprite):
@@ -32,7 +40,10 @@ class Star(pygame.sprite.Sprite):
         self.y = y
         self.image = pygame.image.load("star.png")
         self.rect = self.image.get_rect(center=(x, y))
+
+
 star = Star(70, 180)
+
 
 ## Define the Player class
 class Player(pygame.sprite.Sprite):
@@ -43,23 +54,38 @@ class Player(pygame.sprite.Sprite):
         self.y_velocity = 0
         self.x_velocity = 0
         self.is_jumping = False
-        self.is_moving = True
-        self.image = pygame.transform.scale(pygame.image.load("player.png"), (35, 70))
+        self.is_moving = False
+        self.image = pygame.transform.scale(pygame.image.load("player.png"),
+                                            (35, 70))
         self.rect = self.image.get_rect(center=(x, y))
 
-
     def update_player(self, pressed_keys):
-        if pressed_keys[K_UP] and not self.is_jumping:
-            self.y_velocity = -13
-            self.is_jumping = True
+        self.next_y = (self.rect.midbottom) + (int(self.y_velocity), 0)
+        for platform in platforms:
+            print(platform.rect.top)
+            print(player.rect.bottom)
+            if platform.rect.colliderect(player.rect):
+                if player.y >= platform.rect.top + player.y_velocity:
+                    if player.y <= platform.rect.bottom + player.y_velocity:
+                        player.y = platform.rect.top
+                if player.x >= platform.rect.left + player.x_velocity:
+                    if player.x <= platform.rect.right + player.x_velocity:
+                        player.x = platform.rect.right
+                
+                
+            
+            if pressed_keys[K_UP] and not self.is_jumping:
+                self.y_velocity = -13
+                self.is_jumping = True
 
-        if self.is_moving:
+        if not self.is_moving:
             if pressed_keys[K_LEFT]:
-                self.x_velocity = -3
+                self.x_velocity = -5
             if pressed_keys[K_RIGHT]:
-                self.x_velocity = 3
+                self.x_velocity = 5
 
-        self.y_velocity += 0.5
+        self.y_velocity += 0.53
+        #if world.check_move(player, target, filter):
         self.rect.move_ip(self.x_velocity, self.y_velocity)
 
         if self.x_velocity <= 0:
@@ -80,14 +106,10 @@ class Player(pygame.sprite.Sprite):
             self.rect.right = screen_width
         if self.rect.top <= 0:
             self.rect.top = 0
-        if self.rect.bottom >= screen_height:
-            self.rect.bottom = screen_height
-            
 
-        
-        
-player = Player(103,503)
 
+
+player = Player(103, 503)
 
 
 ## Defines the Platform class
@@ -99,21 +121,12 @@ class Platform(pygame.sprite.Sprite):
         self.image = pygame.image.load("platform.png")
         self.rect = self.image.get_rect(center=(x, y))
 
+
 platforms = []
 for i in range(2):
-    platforms.append(Platform((i + 1) * 140, 550 - (i*100)))
+    platforms.append(Platform((i + 1) * 140, 550 - (i * 100)))
 for i in range(2):
-    platforms.append(Platform(210 - ((i + 0))*140, 300 - (i*80)))
-
-
-
-
-
-
-
-
-
-
+    platforms.append(Platform(210 - ((i + 0)) * 140, 300 - (i * 80)))
 
 ##platform = Platform(50, 575)
 
@@ -128,7 +141,10 @@ pygame.init()
 ## Main game loop
 running = True
 clock = pygame.time.Clock()
+
+frameCount = 0
 while running:
+    frameCount += 1
     ## Set background colour
     window.fill(backgroundColour)
     ## Draws platforms
@@ -140,18 +156,25 @@ while running:
     window.blit(player.image, player.rect)
 
     for platform in platforms:
-         if player.rect.colliderect(platform.rect):
-             print("Collision")
-             player.y_velocity = 0
-             player.is_jumping = False
+        if player.rect.colliderect(platform.rect):
+            print("Collision")
+            player.y_velocity = 0
+            player.x_velocity = 0
+            player.is_jumping = False
+            player.is_moving = False
 
+    for spike in spikes:
+        if player.rect.colliderect(spike.rect):
+            print("You hit a spike")
+            running = False
 
     if player.rect.colliderect(star.rect):
-         print("Collision")
-         running = False
-             
-    
+        print("You collected a star")
+        running = False
 
+    if player.rect.bottom >= screen_height:
+        print("You fell of the map")
+        running = False
 
     UP = False
 
@@ -163,11 +186,11 @@ while running:
 
     pressed_keys = pygame.key.get_pressed()
     player.update_player(pressed_keys)
-                
 
-    
     ## Update the display
     pygame.display.flip()
 
     ## Sets FPS
-    clock.tick(24)
+    clock.tick(30)
+
+pygame.quit()
