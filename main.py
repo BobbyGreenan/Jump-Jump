@@ -8,10 +8,6 @@ from pygame.locals import (
     KEYDOWN,
 )
 
-import collider
-
-world = collider.World()
-
 
 ## the spike class
 class Spike(pygame.sprite.Sprite):
@@ -142,6 +138,11 @@ pygame.init()
 running = True
 clock = pygame.time.Clock()
 
+allSprites = pygame.sprite.Group()
+for platform in platforms:
+    allSprites.add(platform)
+    
+    
 frameCount = 0
 while running:
     frameCount += 1
@@ -177,7 +178,13 @@ while running:
         running = False
 
     UP = False
+    
+    player.rect.center = pygame.mouse.get_pos()
+    collide = pygame.sprite.spritecollide(player, test_group, False)
 
+    for s in collide:
+        pygame.draw.rect(window, (255, 255, 255), s.rect, 5, 1)
+        
     ## Check for events
     for event in pygame.event.get():
         ## Check if the user has pressed the escape key
